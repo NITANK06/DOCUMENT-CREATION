@@ -1,0 +1,72 @@
+import { useEffect, useState } from "react";
+import API from "../api";
+import Editor from "../components/Editor";
+
+export default function Home() {
+  const [docs, setDocs] = useState([]);
+  const [current, setCurrent] = useState(null);
+
+  useEffect(() => {
+    fetchDocs();
+  }, []);
+
+  const fetchDocs = async () => {
+    const res = await API.get("/docs");
+    setDocs(res.data);
+  };
+
+  const createDoc = async () => {
+    const res = await API.post("/docs");
+    setCurrent(res.data);
+    fetchDocs();
+  };
+
+  const saveDoc = async () => {
+    await API.put(`/docs/${current._id}`, current);
+    alert("Saved!");
+  };
+
+  const uploadFile = async (e) => {
+    const formData = new FormData();
+    formData.append("file", e.target.files[0]);
+
+    const res = await API.post("/upload", formData);
+    setCurrent({ ...current, content: res.data.content });
+  };
+
+  return (
+    <div className="p-4">
+      <button onClick={createDoc}>New Document</button>
+
+      <input type="file" onChange={uploadFile} />
+
+      <ul>
+        {docs.map(doc => (
+          <li key={doc._id} onClick={() => setCurrent(doc)}>
+            {doc.title}
+          </li>
+        ))}
+      </ul>
+
+      {current && (
+        <>
+          <input
+            value={current.title}
+            onChange={(e) =>
+              setCurrent({ ...current, title: e.target.value })
+            }
+          />
+
+          <Editor
+            value={current.content}
+            onChange={(content) =>
+              setCurrent({ ...current, content })
+            }
+          />
+
+          <button onClick={saveDoc}>Save</button>
+        </>
+      )}
+    </div>
+  );
+}
